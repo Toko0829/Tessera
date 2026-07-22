@@ -195,6 +195,7 @@ libs/
   domain/         Framework-free domain logic, referenced by api and worker
   persistence/    EF Core context + Identity user store, referenced by api (and worker)
   storage/        S3-compatible object storage (presigned uploads, reads), api and worker
+  queue/          Redis-backed transcode job queue, api enqueues and worker consumes
 docs/
   modules/        One file per module — mandatory, see §4
 tests/            .NET test projects (xUnit + Testcontainers)

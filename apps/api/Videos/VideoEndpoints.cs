@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Tessera.Api.Auth;
 using Tessera.Domain;
 using Tessera.Persistence;
+using Tessera.Queue;
 using Tessera.Storage;
 
 namespace Tessera.Api.Videos;
@@ -71,6 +72,7 @@ public static class VideoEndpoints
         TesseraDbContext db,
         IObjectStorage storage,
         IOptions<VideoUploadOptions> options,
+        TranscodeQueue transcodeQueue,
         CancellationToken ct)
     {
         var ownerId = principal.UserId();
@@ -115,6 +117,11 @@ public static class VideoEndpoints
 
         video.Status = VideoStatus.Uploaded;
         await db.SaveChangesAsync(ct);
+
+        // Hand the video to the transcode worker. The DB status is committed first, so
+        // a failed enqueue leaves an Uploaded row that can be re-queued, never a
+        // queued job with no record.
+        await transcodeQueue.EnqueueAsync(video.Id);
 
         return Results.Ok(ToResponse(video));
     }

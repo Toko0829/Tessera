@@ -36,8 +36,10 @@ Owns the `Videos` table: `Id`, `OwnerId` (FK, cascade), `Title`, `OriginalFileNa
 **Depends on:** `libs/persistence` (the `Videos` table), `libs/storage` (presigned
 upload, header read, delete), `libs/domain` (`VideoSignature` magic-byte check),
 Redis for the per-user rate limit.
-**Depended on by:** the transcode worker will pick up `Uploaded` videos; the upload UI
-calls these endpoints.
+**Depended on by:** the upload UI calls these endpoints. On a successful `complete`,
+the video is enqueued for the transcode worker via `libs/queue` (status committed
+first, so a failed enqueue leaves a re-queueable `Uploaded` row, never a job with no
+record).
 
 ## Security
 

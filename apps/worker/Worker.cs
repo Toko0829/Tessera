@@ -1,21 +1,66 @@
+using Microsoft.Extensions.Options;
+using StackExchange.Redis;
+using Tessera.Queue;
+
 namespace Tessera.Worker;
 
-// Skeleton host. The transcode loop (dequeue → FFmpeg in a sandbox → write ABR
-// output) lands with the transcode module. Until then the host stays alive so the
-// container has a running process, without faking work it does not yet do.
-public sealed class Worker(ILogger<Worker> logger) : BackgroundService
+// The consume loop: recover anything a previous run left mid-flight, then poll the
+// queue, processing one job at a time in its own DI scope.
+public sealed class Worker(
+    IServiceScopeFactory scopeFactory,
+    TranscodeQueue queue,
+    IOptions<TranscodeOptions> options,
+    ILogger<Worker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Tessera transcoding worker started; no queue wired yet");
+        logger.LogInformation("Tessera transcoding worker started");
+        await queue.RequeueInFlightAsync();
 
-        try
+        var idleDelay = TimeSpan.FromSeconds(options.Value.PollSeconds);
+
+        while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            Guid? videoId;
+            try
+            {
+                videoId = await queue.ClaimAsync();
+            }
+            catch (RedisException exception)
+            {
+                logger.LogError(exception, "Queue unavailable; retrying shortly");
+                videoId = null;
+            }
+
+            if (videoId is null)
+            {
+                try
+                {
+                    await Task.Delay(idleDelay, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var service = scope.ServiceProvider.GetRequiredService<TranscodeService>();
+                await service.ProcessAsync(videoId.Value, stoppingToken);
+                await queue.CompleteAsync(videoId.Value);
+            }
+            catch (OperationCanceledException)
+            {
+                // Shutdown mid-job: the entry stays in the processing list and is
+                // re-queued on the next start; the service already released the claim.
+                break;
+            }
         }
-        catch (OperationCanceledException)
-        {
-            logger.LogInformation("Tessera transcoding worker stopping");
-        }
+
+        logger.LogInformation("Tessera transcoding worker stopping");
     }
 }

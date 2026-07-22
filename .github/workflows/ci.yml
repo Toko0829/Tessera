@@ -66,6 +66,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Install ffmpeg (transcode tests)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Restore
         run: dotnet restore Tessera.slnx
 

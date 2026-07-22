@@ -18,6 +18,12 @@ public interface IObjectStorage
 
     Task DeleteAsync(string key, CancellationToken ct);
 
+    // Downloads an object to a local file; the worker pulls originals this way.
+    Task DownloadToFileAsync(string key, string filePath, CancellationToken ct);
+
+    // Uploads a local file; the worker pushes transcode outputs this way.
+    Task UploadFileAsync(string key, string filePath, string contentType, CancellationToken ct);
+
     // Creates the bucket if it is missing. Used for local development only.
     Task EnsureBucketExistsAsync(CancellationToken ct);
 }

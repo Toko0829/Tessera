@@ -50,6 +50,29 @@ export class Home {
     });
   }
 
+  protected statusLabel(status: string): string {
+    switch (status) {
+      case 'PendingUpload':
+        return 'Pending';
+      case 'Uploaded':
+        return 'Queued';
+      default:
+        return status;
+    }
+  }
+
+  protected statusClass(status: string): string {
+    switch (status) {
+      case 'Ready':
+        return 'text-accent-hi';
+      case 'Rejected':
+      case 'Failed':
+        return 'text-live';
+      default:
+        return 'text-premium';
+    }
+  }
+
   private upload(file: File): void {
     this.uploading.set(true);
     this.progress.set(0);
