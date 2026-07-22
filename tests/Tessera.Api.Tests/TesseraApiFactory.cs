@@ -23,6 +23,9 @@ public sealed class TesseraApiFactory : WebApplicationFactory<Program>, IAsyncLi
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Not Development, so the app's startup auto-migration stays off; this factory
+        // is the single migration authority for tests.
+        builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Tessera", _postgres.GetConnectionString());
         builder.UseSetting("ConnectionStrings:Redis", _redis.GetConnectionString());
         builder.UseSetting("Jwt:Issuer", "tessera-tests");

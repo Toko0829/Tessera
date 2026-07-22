@@ -13,7 +13,8 @@ services:
       # Local dev default; override by copying .env.example to .env
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tessera_dev}
     ports:
-      - "5432:5432"
+      # Host 5433 to avoid clashing with a native PostgreSQL on the default 5432.
+      - "5433:5432"
     volumes:
       - tessera_pg:/var/lib/postgresql/data
     healthcheck:

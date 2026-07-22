@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RedisRateLimiting;
 using StackExchange.Redis;
@@ -97,6 +98,15 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// In development the schema is applied on startup so a fresh clone runs right after
+// `docker compose up`. Production applies migrations in the deploy pipeline, not here.
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<TesseraDbContext>();
+    await database.Database.MigrateAsync();
+}
 
 // Rate limiting runs before authentication so the auth endpoints cannot be used as
 // a brute-force oracle (CLAUDE.md section 6).

@@ -65,20 +65,20 @@ user-secrets for local development:
 
 ```bash
 dotnet user-secrets --project apps/api \
-  set "ConnectionStrings:Tessera" "Host=localhost;Port=5432;Database=tessera;Username=tessera;Password=tessera_dev"
+  set "ConnectionStrings:Tessera" "Host=localhost;Port=5433;Database=tessera;Username=tessera;Password=tessera_dev"
 dotnet user-secrets --project apps/api set "ConnectionStrings:Redis" "localhost:6379"
 dotnet user-secrets --project apps/api set "Jwt:SigningKey" "$(openssl rand -base64 48)"
 ```
 
-Then run:
+Then run (the schema is applied automatically on first start in development):
 
 ```bash
 dotnet restore
-dotnet tool restore                 # provides dotnet-ef
-dotnet ef database update \         # apply migrations to the local database
-  -p libs/persistence -s libs/persistence
 dotnet run --project apps/api
 ```
+
+To create a new migration later, restore the local tools first (`dotnet tool
+restore`) and use `dotnet ef migrations add <Name> -p libs/persistence -s libs/persistence`.
 
 ## License
 
