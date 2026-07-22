@@ -80,6 +80,34 @@ dotnet run --project apps/api
 To create a new migration later, restore the local tools first (`dotnet tool
 restore`) and use `dotnet ef migrations add <Name> -p libs/persistence -s libs/persistence`.
 
+### Inspecting the database
+
+The dev database is the Docker container on host port **5433**, deliberately not the
+default 5432 (a native PostgreSQL install commonly holds 5432). Connect any client
+(pgAdmin, DBeaver) with:
+
+| Field | Value |
+| --- | --- |
+| Host | `localhost` |
+| Port | **5433** |
+| Database | `tessera` |
+| Username | `tessera` |
+| Password | `tessera_dev` |
+
+Or from the command line, without any client:
+
+```bash
+docker exec tessera-postgres psql -U tessera -d tessera -c '\dt'
+docker exec tessera-postgres psql -U tessera -d tessera -c 'SELECT "Email", "CreatedAt" FROM "AspNetUsers";'
+```
+
+### Running the tests
+
+```bash
+dotnet test                    # backend; needs Docker running (Testcontainers)
+pnpm --filter web test:ci      # web
+```
+
 ## License
 
 Not yet chosen. Do not assume this code is open source until a `LICENSE` file
