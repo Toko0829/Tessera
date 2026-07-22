@@ -1,0 +1,101 @@
+name: CI
+
+# Enforces the mergeable gates from CLAUDE.md §9. Item 8 (module docs updated when
+# a module changes) is deliberately NOT automated here: a blanket "source changed ⇒
+# docs changed" rule would contradict §4, which keeps refactors and bug fixes out of
+# the docs. That gate stays a review responsibility.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install (frozen)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter web run lint
+
+      - name: Build
+        run: pnpm --filter web run build
+
+      - name: Test
+        run: pnpm --filter web run test:ci
+
+      - name: Dependency vulnerability scan
+        run: pnpm audit --audit-level=high
+
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Tessera.slnx
+
+      - name: Format check
+        run: dotnet format Tessera.slnx --verify-no-changes --no-restore
+
+      - name: Build (Release, warnings as errors)
+        run: dotnet build Tessera.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Tessera.slnx -c Release --no-build
+
+      - name: Dependency vulnerability scan
+        run: |
+          report=$(dotnet list Tessera.slnx package --vulnerable --include-transitive)
+          echo "$report"
+          if echo "$report" | grep -qiE "Critical|High"; then
+            echo "::error::High or critical vulnerable packages found"
+            exit 1
+          fi
+          echo "No high/critical vulnerabilities."
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
