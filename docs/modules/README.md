@@ -13,6 +13,7 @@ Creating a module without `docs/modules/<module>.md` is incomplete work. See
 | web-auth | `apps/web` (`core/auth`, `features/auth`) | Login and signup UI, client auth state | [web-auth.md](./web-auth.md) |
 | storage | `libs/storage` | S3-compatible object storage (presigned uploads, reads) | [storage.md](./storage.md) |
 | video-upload | `apps/api` (`Videos/`) | Presigned upload, magic-byte validation, video records | [video-upload.md](./video-upload.md) |
+| web-video | `apps/web` (`core/video`, `features/home`) | Upload UI and library, client upload flow | [web-video.md](./web-video.md) |
 
 ---
 

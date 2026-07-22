@@ -24,16 +24,82 @@
     </div>
   </header>
 
-  <main class="mx-auto max-w-3xl px-6 py-16 text-center">
-    <h1 class="text-2xl font-semibold tracking-tight">
-      @if (user()) {
-        You are signed in
-      } @else {
-        Loading...
-      }
-    </h1>
-    <p class="mx-auto mt-3 max-w-md text-ink-muted">
-      Your authenticated area. Upload and your library land here as those features ship.
-    </p>
+  <main class="mx-auto max-w-3xl px-6 py-10">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-xl font-semibold tracking-tight">Your videos</h1>
+      <label
+        class="inline-flex h-10 cursor-pointer items-center rounded-lg bg-accent px-4 text-sm font-semibold text-[#04120f] transition hover:bg-accent-hi"
+        [class.pointer-events-none]="uploading()"
+        [class.opacity-60]="uploading()"
+      >
+        <input
+          type="file"
+          accept="video/*"
+          class="hidden"
+          [disabled]="uploading()"
+          (change)="onFileSelected($event)"
+        />
+        Upload video
+      </label>
+    </div>
+
+    @if (uploading()) {
+      <div class="mb-6 rounded-xl border border-border bg-surface-1 p-4">
+        <div class="mb-2 flex items-center justify-between text-sm text-ink-muted">
+          <span>Uploading...</span>
+          <span>{{ progress() }}%</span>
+        </div>
+        <div class="h-2 overflow-hidden rounded-full bg-surface-2">
+          <div class="h-full rounded-full bg-accent transition-all" [style.width.%]="progress()"></div>
+        </div>
+      </div>
+    }
+
+    @if (error(); as message) {
+      <p
+        role="alert"
+        class="mb-6 rounded-lg border border-[#f0443840] bg-[#f0443814] px-3 py-2 text-sm text-[#ff9a94]"
+      >
+        {{ message }}
+      </p>
+    }
+
+    @if (library().length === 0) {
+      <div class="rounded-xl border border-dashed border-border p-10 text-center text-ink-muted">
+        No videos yet. Upload your first one.
+      </div>
+    } @else {
+      <ul class="flex flex-col gap-2">
+        @for (video of library(); track video.id) {
+          <li class="flex items-center justify-between rounded-xl border border-border bg-surface-1 px-4 py-3">
+            <div>
+              <p class="font-medium">{{ video.title }}</p>
+              <p class="text-xs text-ink-faint">{{ video.createdAt | date: 'medium' }}</p>
+            </div>
+            <span
+              class="rounded-md px-2 py-0.5 text-xs font-medium"
+              [class.text-accent-hi]="video.status === 'Uploaded'"
+              [class.text-premium]="video.status === 'PendingUpload'"
+              [class.text-live]="video.status === 'Rejected'"
+            >
+              @switch (video.status) {
+                @case ('Uploaded') {
+                  Ready
+                }
+                @case ('PendingUpload') {
+                  Pending
+                }
+                @case ('Rejected') {
+                  Rejected
+                }
+                @default {
+                  {{ video.status }}
+                }
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    }
   </main>
 </div>
