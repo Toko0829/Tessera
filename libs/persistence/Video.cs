@@ -5,11 +5,20 @@ public enum VideoStatus
     // Row created, waiting for the browser to upload to storage.
     PendingUpload,
 
-    // Upload finished and passed magic-byte validation; ready to transcode.
+    // Upload finished and passed magic-byte validation; queued for transcode.
     Uploaded,
 
     // Upload failed validation (wrong content, size mismatch); object removed.
     Rejected,
+
+    // The worker is transcoding it right now.
+    Processing,
+
+    // Transcoded renditions exist in storage; playable.
+    Ready,
+
+    // Transcoding failed (bad stream, timeout); the original is kept for diagnosis.
+    Failed,
 }
 
 public sealed class Video

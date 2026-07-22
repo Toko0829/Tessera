@@ -12,6 +12,7 @@ using StackExchange.Redis;
 using Tessera.Api.Auth;
 using Tessera.Api.Videos;
 using Tessera.Persistence;
+using Tessera.Queue;
 using Tessera.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,6 +56,7 @@ builder.Services.AddSingleton<RefreshTokenCookie>();
 
 builder.Services.AddTesseraStorage(builder.Configuration);
 builder.Services.Configure<VideoUploadOptions>(builder.Configuration.GetSection(VideoUploadOptions.SectionName));
+builder.Services.AddSingleton<TranscodeQueue>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

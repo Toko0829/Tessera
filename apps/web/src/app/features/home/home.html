@@ -76,26 +76,8 @@
               <p class="font-medium">{{ video.title }}</p>
               <p class="text-xs text-ink-faint">{{ video.createdAt | date: 'medium' }}</p>
             </div>
-            <span
-              class="rounded-md px-2 py-0.5 text-xs font-medium"
-              [class.text-accent-hi]="video.status === 'Uploaded'"
-              [class.text-premium]="video.status === 'PendingUpload'"
-              [class.text-live]="video.status === 'Rejected'"
-            >
-              @switch (video.status) {
-                @case ('Uploaded') {
-                  Ready
-                }
-                @case ('PendingUpload') {
-                  Pending
-                }
-                @case ('Rejected') {
-                  Rejected
-                }
-                @default {
-                  {{ video.status }}
-                }
-              }
+            <span class="rounded-md px-2 py-0.5 text-xs font-medium" [class]="statusClass(video.status)">
+              {{ statusLabel(video.status) }}
             </span>
           </li>
         }

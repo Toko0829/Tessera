@@ -111,6 +111,21 @@ public sealed class S3ObjectStorage : IObjectStorage
     public Task DeleteAsync(string key, CancellationToken ct)
         => _s3.DeleteObjectAsync(_options.Bucket, key, ct);
 
+    public async Task DownloadToFileAsync(string key, string filePath, CancellationToken ct)
+    {
+        using var response = await _s3.GetObjectAsync(_options.Bucket, key, ct);
+        await response.WriteResponseStreamToFileAsync(filePath, append: false, ct);
+    }
+
+    public Task UploadFileAsync(string key, string filePath, string contentType, CancellationToken ct)
+        => _s3.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = _options.Bucket,
+            Key = key,
+            FilePath = filePath,
+            ContentType = contentType,
+        }, ct);
+
     public async Task EnsureBucketExistsAsync(CancellationToken ct)
     {
         if (!await AmazonS3Util.DoesS3BucketExistV2Async(_s3, _options.Bucket))

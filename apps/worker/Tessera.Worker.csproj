@@ -13,5 +13,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\libs\domain\Tessera.Domain.csproj" />
+    <ProjectReference Include="..\..\libs\queue\Tessera.Queue.csproj" />
+    <ProjectReference Include="..\..\libs\persistence\Tessera.Persistence.csproj" />
+    <ProjectReference Include="..\..\libs\storage\Tessera.Storage.csproj" />
   </ItemGroup>
 </Project>

@@ -13,11 +13,15 @@
   <Folder Name="/libs/persistence/">
     <Project Path="libs/persistence/Tessera.Persistence.csproj" />
   </Folder>
+  <Folder Name="/libs/queue/">
+    <Project Path="libs/queue/Tessera.Queue.csproj" />
+  </Folder>
   <Folder Name="/libs/storage/">
     <Project Path="libs/storage/Tessera.Storage.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Tessera.Api.Tests/Tessera.Api.Tests.csproj" />
     <Project Path="tests/Tessera.Persistence.Tests/Tessera.Persistence.Tests.csproj" />
+    <Project Path="tests/Tessera.Worker.Tests/Tessera.Worker.Tests.csproj" />
   </Folder>
 </Solution>
