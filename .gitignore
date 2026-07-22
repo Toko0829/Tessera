@@ -43,6 +43,7 @@ secrets.json
 **/secrets/
 
 # ── Tooling / OS / IDE ──
+.claude/
 .idea/
 .vscode/*
 !.vscode/extensions.json

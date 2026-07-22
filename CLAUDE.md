@@ -318,6 +318,9 @@ The following make a change unacceptable regardless of whether it runs:
   around code that cannot throw. It hides real error handling.
 - **Silent partial completion.** If three of five cases are handled, the other
   two throw explicitly. They do not fall through quietly.
+- **Em dashes in text.** Never use an em dash (`—`) anywhere text is written:
+  prose, docs, READMEs, code comments, commit messages, UI copy. It reads as
+  machine-generated. Use a period, comma, colon, or parentheses instead.
 
 ---
 
