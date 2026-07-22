@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Tessera.Persistence;
@@ -11,9 +12,11 @@ using Tessera.Persistence;
 namespace Tessera.Persistence.Migrations
 {
     [DbContext(typeof(TesseraDbContext))]
-    partial class TesseraDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260722125930_Videos")]
+    partial class Videos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

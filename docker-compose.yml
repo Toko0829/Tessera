@@ -29,5 +29,22 @@ services:
     ports:
       - "6379:6379"
 
+  # S3-compatible object storage for local development. The same code targets real
+  # AWS S3 in production; only the endpoint and credentials differ.
+  minio:
+    image: minio/minio
+    container_name: tessera-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: tessera
+      # Local dev default; override by copying .env.example to .env
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-tessera_dev_minio}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - tessera_minio:/data
+
 volumes:
   tessera_pg:
+  tessera_minio:

@@ -11,6 +11,7 @@ public sealed class TesseraDbContext(DbContextOptions<TesseraDbContext> options)
     : IdentityDbContext<TesseraUser, IdentityRole<Guid>, Guid>(options)
 {
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Video> Videos => Set<Video>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -30,6 +31,26 @@ public sealed class TesseraDbContext(DbContextOptions<TesseraDbContext> options)
             token.HasOne(t => t.User)
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Video>(video =>
+        {
+            video.HasKey(v => v.Id);
+
+            // Stored as text so the status reads plainly in the database.
+            video.Property(v => v.Status).HasConversion<string>().HasMaxLength(32);
+            video.Property(v => v.Title).HasMaxLength(256);
+            video.Property(v => v.OriginalFileName).HasMaxLength(256);
+            video.Property(v => v.ContentType).HasMaxLength(128);
+            video.Property(v => v.StorageKey).HasMaxLength(512);
+
+            // Listing a user's own videos queries by owner.
+            video.HasIndex(v => v.OwnerId);
+
+            video.HasOne(v => v.Owner)
+                .WithMany()
+                .HasForeignKey(v => v.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
