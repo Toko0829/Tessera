@@ -193,6 +193,7 @@ apps/
   worker/         Transcoding worker, consumes the queue
 libs/
   domain/         Framework-free domain logic, referenced by api and worker
+  persistence/    EF Core context + Identity user store, referenced by api (and worker)
 docs/
   modules/        One file per module — mandatory, see §4
 tests/            .NET test projects (xUnit + Testcontainers)

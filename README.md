@@ -50,10 +50,21 @@ pnpm install
 pnpm --filter web start
 ```
 
+### Local infrastructure
+
+PostgreSQL and Redis run in Docker for local development:
+
+```bash
+docker compose up -d
+```
+
 ### Backend (`apps/api`, `apps/worker`)
 
 ```bash
 dotnet restore
+dotnet tool restore                 # provides dotnet-ef
+dotnet ef database update \         # apply migrations to the local database
+  -p libs/persistence -s libs/persistence
 dotnet run --project apps/api
 ```
 
