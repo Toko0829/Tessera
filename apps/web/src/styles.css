@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Tessera "Mosaic Dark" identity tokens, exposed to Tailwind as utilities
+   (bg-surface-0, text-accent, etc.). See docs — accent is aqua-teal; red and
+   amber are reserved for live/error and premium only, never as brand. */
+@theme {
+  --color-surface-0: #0b0e14;
+  --color-surface-1: #141922;
+  --color-surface-2: #1d2430;
+  --color-border: #2a3140;
+
+  --color-ink: #f2f5f8;
+  --color-ink-muted: #a0aab8;
+  --color-ink-faint: #6b7585;
+
+  --color-accent: #2dd4bf;
+  --color-accent-hi: #5eead4;
+  --color-accent-deep: #0f766e;
+
+  --color-premium: #f5a524;
+  --color-live: #f04438;
+}
