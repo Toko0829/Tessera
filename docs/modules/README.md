@@ -9,6 +9,7 @@ Creating a module without `docs/modules/<module>.md` is incomplete work. See
 | Module | Location | Purpose | Doc |
 | --- | --- | --- | --- |
 | persistence | `libs/persistence` | PostgreSQL access, EF Core context, Identity user store | [persistence.md](./persistence.md) |
+| auth | `apps/api` (`Auth/`) | Register, login, JWT issuance, rate limiting, lockout | [auth.md](./auth.md) |
 
 ---
 

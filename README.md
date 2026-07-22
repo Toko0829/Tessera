@@ -60,6 +60,18 @@ docker compose up -d
 
 ### Backend (`apps/api`, `apps/worker`)
 
+Connection strings and the JWT signing key are never committed. Set them once via
+user-secrets for local development:
+
+```bash
+dotnet user-secrets --project apps/api \
+  set "ConnectionStrings:Tessera" "Host=localhost;Port=5432;Database=tessera;Username=tessera;Password=tessera_dev"
+dotnet user-secrets --project apps/api set "ConnectionStrings:Redis" "localhost:6379"
+dotnet user-secrets --project apps/api set "Jwt:SigningKey" "$(openssl rand -base64 48)"
+```
+
+Then run:
+
 ```bash
 dotnet restore
 dotnet tool restore                 # provides dotnet-ef

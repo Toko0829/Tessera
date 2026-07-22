@@ -1,11 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Tessera.Api.Tests;
 
-public sealed class HealthEndpointTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+[Collection(ApiCollection.Name)]
+public sealed class HealthEndpointTests(TesseraApiFactory factory)
 {
     [Fact]
     public async Task Health_returns_ok()
