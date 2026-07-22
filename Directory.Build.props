@@ -1,0 +1,11 @@
+<Project>
+  <!-- Charter posture (CLAUDE.md §3) applied to every .NET project in the repo:
+       nullable on, warnings are errors, latest C#. Per-project files stay lean. -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+</Project>

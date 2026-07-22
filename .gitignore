@@ -1,0 +1,39 @@
+# ── Node / Angular (apps/web) ──
+node_modules/
+dist/
+.angular/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+.vitest/
+
+# ── .NET (apps/api, apps/worker) ──
+bin/
+obj/
+[Bb]uild/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+*.coverage
+*.received.*
+
+# ── Secrets / local config (never commit — CLAUDE.md §6) ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+appsettings.*.Local.json
+secrets.json
+
+# ── Tooling / OS / IDE ──
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.log
+.DS_Store
+Thumbs.db

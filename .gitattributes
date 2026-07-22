@@ -1,0 +1,21 @@
+# Normalise line endings: LF in the repo, checked out as-is by git.
+# Keeps diffs clean across the Windows dev box and Linux CI/containers.
+* text=auto eol=lf
+
+# Windows-only script files keep CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binaries — never normalise
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+*.webm binary
+*.pdf binary
