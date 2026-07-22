@@ -8,3 +8,6 @@ var app = builder.Build();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
+
+// Exposed so the integration test host (WebApplicationFactory<Program>) can boot the real app.
+public partial class Program;

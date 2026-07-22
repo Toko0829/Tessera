@@ -11,6 +11,6 @@
     <Project Path="libs/domain/Tessera.Domain.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Tessera.Domain.Tests/Tessera.Domain.Tests.csproj" />
+    <Project Path="tests/Tessera.Api.Tests/Tessera.Api.Tests.csproj" />
   </Folder>
 </Solution>
