@@ -40,4 +40,21 @@ describe('AuthService', () => {
 
     expect(service.isAuthenticated()).toBe(false);
   });
+
+  it('restores the session from the refresh cookie', () => {
+    service.restoreSession().subscribe();
+
+    const request = http.expectOne('/auth/refresh');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush({ accessToken: 'restored', expiresAt: '' });
+
+    expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('stays logged out when there is no valid refresh cookie', () => {
+    service.restoreSession().subscribe();
+    http.expectOne('/auth/refresh').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(service.isAuthenticated()).toBe(false);
+  });
 });

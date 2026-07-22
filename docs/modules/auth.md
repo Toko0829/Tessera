@@ -61,10 +61,11 @@ token issued here.
 - **Lockout:** five failed logins lock the account for 15 minutes, independent of the
   IP rate limit.
 - **Refresh tokens:** stored only as a SHA-256 hash, so a database leak exposes no
-  usable token. Delivered in an HttpOnly, Secure, SameSite=Strict cookie scoped to
-  `/auth`, so JavaScript cannot read it and it does not ride cross-site requests. Each
-  refresh rotates the token; presenting an already-rotated token revokes the whole
-  family, which contains the damage if a token is captured.
+  usable token. Delivered in an HttpOnly, SameSite=Strict cookie scoped to `/auth`, so
+  JavaScript cannot read it and it does not ride cross-site requests. The cookie is
+  `Secure` in every environment except local development (where the app runs on http
+  on localhost). Each refresh rotates the token; presenting an already-rotated token
+  revokes the whole family, which contains the damage if a token is captured.
 - **Secrets:** the JWT signing key and connection strings are never committed. In
   development they come from user-secrets; in production from the secret store.
 
