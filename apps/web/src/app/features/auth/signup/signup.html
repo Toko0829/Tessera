@@ -1,0 +1,67 @@
+<main class="flex min-h-screen items-center justify-center bg-surface-0 px-4 text-ink antialiased">
+  <div class="w-full max-w-sm">
+    <a routerLink="/" class="mb-8 flex items-center justify-center gap-2.5" aria-label="Tessera home">
+      <span class="grid grid-cols-2 gap-1" aria-hidden="true">
+        <span class="size-3.5 rounded-[3px] bg-accent"></span>
+        <span class="size-3.5 rounded-[3px] bg-accent-deep"></span>
+        <span class="size-3.5 rounded-[3px] bg-accent-deep"></span>
+        <span class="size-3.5 rounded-[3px] bg-accent-hi"></span>
+      </span>
+      <span class="text-lg font-semibold uppercase tracking-[0.2em]">Tessera</span>
+    </a>
+
+    <div class="rounded-2xl border border-border bg-surface-1 p-7">
+      <h1 class="mb-1 text-xl font-semibold tracking-tight">Create your account</h1>
+      <p class="mb-6 text-sm text-ink-muted">Start uploading and streaming in minutes.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="flex flex-col gap-4">
+        @if (error(); as message) {
+          <p role="alert" class="rounded-lg border border-[#f0443840] bg-[#f0443814] px-3 py-2 text-sm text-[#ff9a94]">
+            {{ message }}
+          </p>
+        }
+
+        <div class="flex flex-col gap-1.5">
+          <label for="email" class="text-sm text-ink-muted">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="Your email"
+            class="h-11 rounded-lg border border-border bg-surface-2 px-3 text-ink outline-none placeholder:text-ink-faint focus:border-accent"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="password" class="text-sm text-ink-muted">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="Create a password"
+            aria-describedby="password-hint"
+            class="h-11 rounded-lg border border-border bg-surface-2 px-3 text-ink outline-none placeholder:text-ink-faint focus:border-accent"
+          />
+          <p id="password-hint" class="text-xs text-ink-faint">
+            At least 12 characters, mixing letters, numbers, and a symbol.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="submitting()"
+          class="mt-2 h-11 rounded-lg bg-accent font-semibold text-[#04120f] transition hover:bg-accent-hi disabled:opacity-60"
+        >
+          {{ submitting() ? 'Creating account...' : 'Create account' }}
+        </button>
+      </form>
+    </div>
+
+    <p class="mt-5 text-center text-sm text-ink-muted">
+      Already have an account?
+      <a routerLink="/login" class="text-accent-hi hover:underline">Sign in</a>
+    </p>
+  </div>
+</main>
