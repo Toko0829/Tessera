@@ -21,13 +21,26 @@ TestResults/
 *.received.*
 
 # ── Secrets / local config (never commit — CLAUDE.md §6) ──
+# Env files (all variants), except the checked-in template
 .env
 .env.*
+*.env
 !.env.example
+# Keys, certificates, credentials
 *.pem
 *.key
+*.pfx
+*.p12
+*.crt
+*.cer
+*.keystore
+credentials
+.aws/
+# .NET secrets / machine-local overrides
 appsettings.*.Local.json
+appsettings.Local.json
 secrets.json
+**/secrets/
 
 # ── Tooling / OS / IDE ──
 .idea/
