@@ -266,8 +266,11 @@ Requirements:
 
 ### Video and upload specifics
 
-- **All playback through CloudFront signed URLs, expiry ≤ 5 minutes.** No public
-  S3 bucket. No permanent URL. Ever.
+- **Playback never exposes a public bucket or a permanent URL. Ever.** In
+  production, delivery is CloudFront signed URLs with expiry ≤ 5 minutes. Until the
+  CDN lands (and in local development), the API serves HLS playlists itself,
+  authorised by ownership, and redirects each segment request to a presigned
+  storage GET minted per request with the same ≤ 5 minute expiry.
 - Validate uploads by **magic bytes, not file extension or client MIME type.**
 - Enforce a maximum file size at the edge, at the API, and at the storage layer.
 - Transcode in an isolated sandbox with a CPU and wall-clock timeout. FFmpeg

@@ -92,6 +92,31 @@ public sealed class VideoEndpointsTests : IAsyncLifetime
         Assert.Equal(init.VideoId, videos![0].Id);
     }
 
+    [Fact]
+    public async Task Getting_a_video_returns_it_to_its_owner()
+    {
+        using var client = await SignedInClientAsync();
+
+        var init = await InitiateAsync(client, ValidMp4.Length);
+        var response = await client.GetAsync($"/videos/{init.VideoId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var video = await response.Content.ReadFromJsonAsync<VideoBody>();
+        Assert.Equal(init.VideoId, video?.Id);
+    }
+
+    [Fact]
+    public async Task A_user_cannot_read_another_users_video()
+    {
+        using var owner = await SignedInClientAsync();
+        using var attacker = await SignedInClientAsync();
+
+        var init = await InitiateAsync(owner, ValidMp4.Length);
+        var response = await attacker.GetAsync($"/videos/{init.VideoId}");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     private async Task<HttpClient> SignedInClientAsync()
     {
         var client = _factory.CreateClient(new WebApplicationFactoryClientOptions

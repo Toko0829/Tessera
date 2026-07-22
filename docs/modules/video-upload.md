@@ -15,8 +15,13 @@ and *by whom*, and records the result.
 | Method | Path | Auth | Rate limit | Body | Success | Failure |
 | --- | --- | --- | --- | --- | --- | --- |
 | POST | `/videos` | Bearer | 10 / hour per user | `{ title, fileName, contentType, sizeBytes }` | `200` + `{ videoId, uploadUrl, fields }` | `400` validation, `401`, `429` |
-| POST | `/videos/{id}/complete` | Bearer | none | | `200` + video | `400` invalid/too big, `403` not owner, `404`, `409` already done |
-| GET | `/videos` | Bearer | none | | `200` + the caller's videos | `401` |
+| POST | `/videos/{id}/complete` | Bearer | 300 / min per user | | `200` + video | `400` invalid/too big, `403` not owner, `404`, `409` already done |
+| GET | `/videos` | Bearer | 300 / min per user | | `200` + the caller's videos | `401` |
+| GET | `/videos/{id}` | Bearer | 300 / min per user | | `200` + video | `401`, `403` not owner, `404` |
+
+The `complete`, list, and detail endpoints sit on the charter's general
+authenticated tier (300 per minute per user), added with the playback slice. The
+detail endpoint exists for the watch page, which polls a single video's status.
 
 The browser POSTs the file to `uploadUrl` with the returned `fields` (a presigned S3
 POST), then calls `complete`.
@@ -44,9 +49,9 @@ record).
 ## Security
 
 - **Authentication:** every endpoint requires a valid bearer token.
-- **Authorisation:** `complete` and the storage key are scoped to the owner; a user
-  gets `403` completing someone else's upload, and `GET /videos` only ever returns
-  their own. Tested for the unauthorised case.
+- **Authorisation:** `complete`, the detail read, and the storage key are scoped to
+  the owner; a user gets `403` completing or reading someone else's video, and
+  `GET /videos` only ever returns their own. Tested for the unauthorised cases.
 - **Input validation:** file name required, content type must be `video/*`, size must
   be positive and within the maximum, all checked server-side before a URL is issued.
 - **Content validation:** the real check is magic bytes read back from storage at

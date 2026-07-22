@@ -17,5 +17,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/home/home').then((m) => m.Home),
   },
+  {
+    // hls.js ships only in this lazy chunk, keeping it out of the initial bundle.
+    path: 'watch/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/watch/watch').then((m) => m.Watch),
+  },
   { path: '**', redirectTo: 'home' },
 ];

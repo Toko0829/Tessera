@@ -1,11 +1,11 @@
 {
   "/auth": {
-    "target": "http://localhost:5080",
+    "target": "http://localhost:5069",
     "secure": false,
     "changeOrigin": true
   },
   "/videos": {
-    "target": "http://localhost:5080",
+    "target": "http://localhost:5069",
     "secure": false,
     "changeOrigin": true
   }

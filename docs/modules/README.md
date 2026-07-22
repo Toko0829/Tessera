@@ -15,6 +15,8 @@ Creating a module without `docs/modules/<module>.md` is incomplete work. See
 | video-upload | `apps/api` (`Videos/`) | Presigned upload, magic-byte validation, video records | [video-upload.md](./video-upload.md) |
 | web-video | `apps/web` (`core/video`, `features/home`) | Upload UI and library, client upload flow | [web-video.md](./web-video.md) |
 | transcode | `apps/worker`, `libs/queue` | Redis job queue, FFmpeg worker, HLS ladder | [transcode.md](./transcode.md) |
+| playback | `apps/api` (`Playback/`) | Authorised HLS delivery: playlists via API, segments via signed redirects | [playback.md](./playback.md) |
+| web-playback | `apps/web` (`features/watch`) | Player page, hls.js, honest unsupported/error states | [web-playback.md](./web-playback.md) |
 
 ---
 

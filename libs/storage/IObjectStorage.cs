@@ -16,6 +16,15 @@ public interface IObjectStorage
     // The stored object's size, or null if it does not exist.
     Task<long?> GetSizeAsync(string key, CancellationToken ct);
 
+    // A time-limited signed GET URL for one object. Playback segments are handed out
+    // through these so the bucket itself never needs to be public.
+    string CreatePresignedGetUrl(string key, TimeSpan expiry);
+
+    // Reads a whole object into memory, or null if it does not exist. Only for small
+    // objects (HLS playlists are a few kilobytes); segments and originals go through
+    // streams or files.
+    Task<byte[]?> ReadAllBytesAsync(string key, CancellationToken ct);
+
     Task DeleteAsync(string key, CancellationToken ct);
 
     // Downloads an object to a local file; the worker pulls originals this way.
