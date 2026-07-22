@@ -1,0 +1,49 @@
+<div class="min-h-screen bg-surface-0 text-ink antialiased">
+  <header class="flex items-center justify-between border-b border-border px-6 py-4">
+    <a routerLink="/home" class="text-sm text-ink-muted transition hover:text-ink">
+      &larr; Your videos
+    </a>
+  </header>
+
+  <main class="mx-auto max-w-4xl px-6 py-10">
+    @if (loadError(); as message) {
+      <p
+        role="alert"
+        class="rounded-lg border border-[#f0443840] bg-[#f0443814] px-3 py-2 text-sm text-[#ff9a94]"
+      >
+        {{ message }}
+      </p>
+    } @else if (video(); as v) {
+      <h1 class="mb-6 text-xl font-semibold tracking-tight">{{ v.title }}</h1>
+
+      @if (v.status !== 'Ready') {
+        <p class="rounded-xl border border-border bg-surface-1 p-6 text-ink-muted">
+          This video is not ready to play yet (status: {{ v.status }}). Check back once
+          processing finishes.
+        </p>
+      } @else if (unsupported()) {
+        <p role="alert" class="rounded-xl border border-border bg-surface-1 p-6 text-ink-muted">
+          This browser cannot play Tessera streams yet. Use a browser with Media Source
+          Extensions, such as Chrome, Edge, Firefox, or desktop Safari.
+        </p>
+      } @else {
+        <video
+          #player
+          controls
+          playsinline
+          class="aspect-video w-full rounded-xl border border-border bg-black"
+          [attr.aria-label]="v.title"
+        ></video>
+
+        @if (playbackError(); as message) {
+          <p
+            role="alert"
+            class="mt-4 rounded-lg border border-[#f0443840] bg-[#f0443814] px-3 py-2 text-sm text-[#ff9a94]"
+          >
+            {{ message }}
+          </p>
+        }
+      }
+    }
+  </main>
+</div>

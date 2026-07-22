@@ -108,6 +108,41 @@ public sealed class S3ObjectStorage : IObjectStorage
         }
     }
 
+    public string CreatePresignedGetUrl(string key, TimeSpan expiry)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _options.Bucket,
+            Key = key,
+            Verb = HttpVerb.GET,
+            Expires = _clock.GetUtcNow().UtcDateTime.Add(expiry),
+        };
+
+        // MinIO in local development runs on plain http; the SDK defaults to https,
+        // which would produce a URL the local endpoint cannot serve.
+        if (_options.ServiceUrl?.StartsWith("http://", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            request.Protocol = Protocol.HTTP;
+        }
+
+        return _s3.GetPreSignedURL(request);
+    }
+
+    public async Task<byte[]?> ReadAllBytesAsync(string key, CancellationToken ct)
+    {
+        try
+        {
+            using var response = await _s3.GetObjectAsync(_options.Bucket, key, ct);
+            using var memory = new MemoryStream();
+            await response.ResponseStream.CopyToAsync(memory, ct);
+            return memory.ToArray();
+        }
+        catch (AmazonS3Exception exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
     public Task DeleteAsync(string key, CancellationToken ct)
         => _s3.DeleteObjectAsync(_options.Bucket, key, ct);
 

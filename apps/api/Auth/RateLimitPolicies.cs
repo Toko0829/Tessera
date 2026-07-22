@@ -14,4 +14,13 @@ public static class RateLimitPolicies
 
     // Video upload initiation: keyed per user (charter section 6).
     public const string VideoUpload = "video-upload";
+
+    // Playback: manifest requests at the charter's 60 per minute per user; segment
+    // requests ride the general authenticated tier since the charter has no
+    // playback-specific row for them.
+    public const string PlaybackManifest = "playback-manifest";
+    public const string PlaybackSegment = "playback-segment";
+
+    // The charter's "everything else authenticated" tier: 300 per minute per user.
+    public const string AuthenticatedDefault = "authenticated-default";
 }

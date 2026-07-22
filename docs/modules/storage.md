@@ -19,6 +19,8 @@ video-upload module), or any database state.
 | `CreatePresignedUpload(key, contentType, maxBytes, expiry)` | `PresignedUpload` (url + form fields) | presigned S3 POST with a `content-length-range` |
 | `ReadHeadAsync(key, byteCount, ct)` | `byte[]` | first bytes, for magic-byte checks |
 | `GetSizeAsync(key, ct)` | `long?` | object size, or null if absent |
+| `CreatePresignedGetUrl(key, expiry)` | `string` | signed GET URL for one object; playback segment redirects |
+| `ReadAllBytesAsync(key, ct)` | `byte[]?` | whole small object (HLS playlists), or null if absent |
 | `DeleteAsync(key, ct)` | `Task` | remove an object |
 | `EnsureBucketExistsAsync(ct)` | `Task` | development only |
 

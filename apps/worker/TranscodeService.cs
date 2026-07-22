@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Tessera.Domain;
 using Tessera.Persistence;
 using Tessera.Storage;
 
@@ -46,7 +47,7 @@ public sealed class TranscodeService(
             foreach (var file in Directory.EnumerateFiles(outputDir))
             {
                 var name = Path.GetFileName(file);
-                await storage.UploadFileAsync($"videos/{videoId}/hls/{name}", file, ContentTypeFor(name), ct);
+                await storage.UploadFileAsync(HlsPaths.Key(videoId, name), file, ContentTypeFor(name), ct);
             }
 
             await SetStatusAsync(videoId, VideoStatus.Ready, CancellationToken.None);

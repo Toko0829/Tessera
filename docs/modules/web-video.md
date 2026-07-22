@@ -29,7 +29,8 @@ upload progress, and an error message.
 **Depends on:** the video-upload API (`POST /videos`, `POST /videos/{id}/complete`,
 `GET /videos`), object storage (the browser POSTs directly to the presigned URL),
 `AuthService` (via the interceptor for the bearer token).
-**Depended on by:** nothing yet; playback will link from the library.
+**Depended on by:** the library links every Ready video to the web-playback watch
+page.
 
 In development the dev server proxies `/videos` (and `/auth`) to the API, and MinIO
 is configured to allow cross-origin uploads from the web origin.

@@ -16,8 +16,9 @@ public static class VideoEndpoints
         var group = app.MapGroup("/videos").RequireAuthorization();
 
         group.MapPost("", InitiateAsync).RequireRateLimiting(RateLimitPolicies.VideoUpload);
-        group.MapPost("/{id:guid}/complete", CompleteAsync);
-        group.MapGet("", ListAsync);
+        group.MapPost("/{id:guid}/complete", CompleteAsync).RequireRateLimiting(RateLimitPolicies.AuthenticatedDefault);
+        group.MapGet("", ListAsync).RequireRateLimiting(RateLimitPolicies.AuthenticatedDefault);
+        group.MapGet("/{id:guid}", GetAsync).RequireRateLimiting(RateLimitPolicies.AuthenticatedDefault);
 
         return app;
     }
@@ -141,6 +142,30 @@ public static class VideoEndpoints
             .ToListAsync(ct);
 
         return Results.Ok(videos);
+    }
+
+    private static async Task<IResult> GetAsync(
+        Guid id, ClaimsPrincipal principal, TesseraDbContext db, CancellationToken ct)
+    {
+        var ownerId = principal.UserId();
+        if (ownerId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var video = await db.Videos.AsNoTracking().FirstOrDefaultAsync(v => v.Id == id, ct);
+        if (video is null)
+        {
+            return Results.NotFound();
+        }
+
+        // Resource ownership: a logged-in user cannot read someone else's video.
+        if (video.OwnerId != ownerId)
+        {
+            return Results.Forbid();
+        }
+
+        return Results.Ok(ToResponse(video));
     }
 
     private static async Task<IResult> RejectAsync(

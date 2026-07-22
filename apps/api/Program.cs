@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using RedisRateLimiting;
 using StackExchange.Redis;
 using Tessera.Api.Auth;
+using Tessera.Api.Playback;
 using Tessera.Api.Videos;
 using Tessera.Persistence;
 using Tessera.Queue;
@@ -56,6 +57,7 @@ builder.Services.AddSingleton<RefreshTokenCookie>();
 
 builder.Services.AddTesseraStorage(builder.Configuration);
 builder.Services.Configure<VideoUploadOptions>(builder.Configuration.GetSection(VideoUploadOptions.SectionName));
+builder.Services.Configure<PlaybackOptions>(builder.Configuration.GetSection(PlaybackOptions.SectionName));
 builder.Services.AddSingleton<TranscodeQueue>();
 
 builder.Services
@@ -96,6 +98,26 @@ static RateLimitPartition<string> AuthPartition(HttpContext httpContext, string 
         });
 }
 
+// Fixed window keyed per authenticated user, falling back to the client IP for the
+// window between authentication and a 401 (an anonymous caller never reaches the
+// endpoint, but the limiter partitions before authorization runs).
+static RateLimitPartition<string> UserPartition(
+    HttpContext httpContext, string prefix, int permitLimit, TimeSpan window)
+{
+    var multiplexer = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+    var userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var partitionKey = userId is not null
+        ? $"{prefix}:user:{userId}"
+        : $"{prefix}:ip:{httpContext.Connection.RemoteIpAddress}";
+
+    return RedisRateLimitPartition.GetFixedWindowRateLimiter(partitionKey, _ => new RedisFixedWindowRateLimiterOptions
+    {
+        ConnectionMultiplexerFactory = () => multiplexer,
+        PermitLimit = permitLimit,
+        Window = window,
+    });
+}
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -107,22 +129,15 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(RateLimitPolicies.AuthLogin, ctx => AuthPartition(ctx, RateLimitPolicies.AuthLogin, 5));
     options.AddPolicy(RateLimitPolicies.AuthRefresh, ctx => AuthPartition(ctx, RateLimitPolicies.AuthRefresh, 30));
 
-    // Upload initiation is keyed per authenticated user: 10 per hour.
-    options.AddPolicy(RateLimitPolicies.VideoUpload, httpContext =>
-    {
-        var multiplexer = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
-        var userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        var partitionKey = userId is not null
-            ? $"video-upload:user:{userId}"
-            : $"video-upload:ip:{httpContext.Connection.RemoteIpAddress}";
-
-        return RedisRateLimitPartition.GetFixedWindowRateLimiter(partitionKey, _ => new RedisFixedWindowRateLimiterOptions
-        {
-            ConnectionMultiplexerFactory = () => multiplexer,
-            PermitLimit = 10,
-            Window = TimeSpan.FromHours(1),
-        });
-    });
+    // The per-user tiers from the charter's rate limit table (CLAUDE.md section 6).
+    options.AddPolicy(RateLimitPolicies.VideoUpload,
+        ctx => UserPartition(ctx, RateLimitPolicies.VideoUpload, 10, TimeSpan.FromHours(1)));
+    options.AddPolicy(RateLimitPolicies.PlaybackManifest,
+        ctx => UserPartition(ctx, RateLimitPolicies.PlaybackManifest, 60, TimeSpan.FromMinutes(1)));
+    options.AddPolicy(RateLimitPolicies.PlaybackSegment,
+        ctx => UserPartition(ctx, RateLimitPolicies.PlaybackSegment, 300, TimeSpan.FromMinutes(1)));
+    options.AddPolicy(RateLimitPolicies.AuthenticatedDefault,
+        ctx => UserPartition(ctx, RateLimitPolicies.AuthenticatedDefault, 300, TimeSpan.FromMinutes(1)));
 });
 
 var app = builder.Build();
@@ -153,6 +168,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapAuthEndpoints();
 app.MapVideoEndpoints();
+app.MapPlaybackEndpoints();
 
 app.Run();
 
