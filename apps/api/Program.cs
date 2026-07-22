@@ -136,6 +136,8 @@ builder.Services.AddRateLimiter(options =>
         ctx => UserPartition(ctx, RateLimitPolicies.PlaybackManifest, 60, TimeSpan.FromMinutes(1)));
     options.AddPolicy(RateLimitPolicies.PlaybackSegment,
         ctx => UserPartition(ctx, RateLimitPolicies.PlaybackSegment, 300, TimeSpan.FromMinutes(1)));
+    options.AddPolicy(RateLimitPolicies.WatchProgress,
+        ctx => UserPartition(ctx, RateLimitPolicies.WatchProgress, 120, TimeSpan.FromMinutes(1)));
     options.AddPolicy(RateLimitPolicies.AuthenticatedDefault,
         ctx => UserPartition(ctx, RateLimitPolicies.AuthenticatedDefault, 300, TimeSpan.FromMinutes(1)));
 });

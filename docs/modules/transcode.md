@@ -26,8 +26,10 @@ playlists and segments (720p 2500k and 480p 1200k, 4-second segments).
 ## Data Model
 
 No new tables. Drives `Videos.Status`: `Uploaded` (queued) to `Processing` to
-`Ready` or `Failed`. Queue state lives in two Redis lists (`queue:transcode` and
-`queue:transcode:processing`).
+`Ready` or `Failed`, and records the ffprobe-measured `Videos.DurationSeconds`
+together with `Ready` (a Ready video always has a length; the playback module
+validates watch-progress positions against it). Queue state lives in two Redis
+lists (`queue:transcode` and `queue:transcode:processing`).
 
 ## Dependencies
 

@@ -11,10 +11,13 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import Hls from 'hls.js';
+import { fromEvent } from 'rxjs';
+import { take, throttleTime } from 'rxjs/operators';
 import { AuthService } from '../../core/auth/auth.service';
 import { VideoResponse } from '../../core/video/video.models';
 import { VideoService } from '../../core/video/video.service';
 import { attachPlaybackToken } from './attach-playback-token';
+import { resumePosition } from './resume-position';
 
 // The player page. State (the video, error and support flags) is signals; the API
 // call is an RxJS stream (charter section 3). hls.js drives MSE playback of the
@@ -64,7 +67,14 @@ export class Watch {
       }
     });
 
-    this.destroyRef.onDestroy(() => this.hls?.destroy());
+    this.destroyRef.onDestroy(() => {
+      // Leaving the page is the last chance to record where the viewer stopped.
+      const element = this.player()?.nativeElement;
+      if (element && this.hls !== null && element.currentTime > 0) {
+        this.saveProgress(id, element.currentTime);
+      }
+      this.hls?.destroy();
+    });
   }
 
   private startPlayback(element: HTMLVideoElement, id: string): void {
@@ -89,5 +99,32 @@ export class Watch {
     });
     this.hls.loadSource(`/videos/${id}/hls/master.m3u8`);
     this.hls.attachMedia(element);
+
+    // Resume from the saved position once the real duration is known.
+    fromEvent(element, 'loadedmetadata')
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const start = resumePosition(this.video()?.positionSeconds ?? null, element.duration);
+        if (start > 0) {
+          element.currentTime = start;
+        }
+      });
+
+    // Record the position every few seconds while playing, and on every pause.
+    // A lost tab still costs at most one cadence interval of progress.
+    fromEvent(element, 'timeupdate')
+      .pipe(throttleTime(5000), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.saveProgress(id, element.currentTime));
+    fromEvent(element, 'pause')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.saveProgress(id, element.currentTime));
+  }
+
+  private saveProgress(id: string, positionSeconds: number): void {
+    this.videos.saveProgress(id, positionSeconds).subscribe({
+      // A failed save is recovered by the next cadence tick, so playback is never
+      // interrupted over it; the position is convenience state, not user data loss.
+      error: () => undefined,
+    });
   }
 }

@@ -21,6 +21,9 @@ public static class RateLimitPolicies
     public const string PlaybackManifest = "playback-manifest";
     public const string PlaybackSegment = "playback-segment";
 
+    // Watch-progress writes: the charter's 120 per minute per user.
+    public const string WatchProgress = "watch-progress";
+
     // The charter's "everything else authenticated" tier: 300 per minute per user.
     public const string AuthenticatedDefault = "authenticated-default";
 }

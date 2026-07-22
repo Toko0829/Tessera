@@ -16,6 +16,10 @@ export class VideoService {
     return this.http.get<VideoResponse>(`/videos/${id}`);
   }
 
+  saveProgress(id: string, positionSeconds: number): Observable<void> {
+    return this.http.put<void>(`/videos/${id}/progress`, { positionSeconds });
+  }
+
   // Runs the whole flow: reserve an upload, send the file straight to storage, then
   // tell the API it finished. Emits upload progress as a percentage (0-100) and a
   // final 100 once the video is confirmed.

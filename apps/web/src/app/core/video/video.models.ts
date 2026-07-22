@@ -9,4 +9,8 @@ export interface VideoResponse {
   readonly title: string;
   readonly status: string;
   readonly createdAt: string;
+  // Null until the worker has measured the video.
+  readonly durationSeconds: number | null;
+  // Null until the caller has watched some of it.
+  readonly positionSeconds: number | null;
 }

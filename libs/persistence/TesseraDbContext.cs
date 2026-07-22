@@ -12,6 +12,7 @@ public sealed class TesseraDbContext(DbContextOptions<TesseraDbContext> options)
 {
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Video> Videos => Set<Video>();
+    public DbSet<WatchProgress> WatchProgresses => Set<WatchProgress>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -51,6 +52,23 @@ public sealed class TesseraDbContext(DbContextOptions<TesseraDbContext> options)
             video.HasOne(v => v.Owner)
                 .WithMany()
                 .HasForeignKey(v => v.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<WatchProgress>(progress =>
+        {
+            // One row per user per video, and the composite key is also the lookup
+            // path (every read and upsert is by both columns), so no further index.
+            progress.HasKey(p => new { p.UserId, p.VideoId });
+
+            progress.HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            progress.HasOne(p => p.Video)
+                .WithMany()
+                .HasForeignKey(p => p.VideoId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

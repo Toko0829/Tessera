@@ -27,6 +27,15 @@ describe('VideoService', () => {
     expect(result?.length).toBe(1);
   });
 
+  it('saves watch progress for a video', () => {
+    service.saveProgress('v1', 42.5).subscribe();
+
+    const request = http.expectOne('/videos/v1/progress');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ positionSeconds: 42.5 });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
   it('reserves, uploads straight to storage, then completes', () => {
     const file = new File([new Uint8Array(8)], 'clip.mp4', { type: 'video/mp4' });
     let lastPercent = 0;

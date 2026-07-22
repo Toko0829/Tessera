@@ -1,13 +1,8 @@
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Tessera.Domain;
 using Tessera.Persistence;
-using Tessera.Storage;
 
 namespace Tessera.Api.Tests;
 
@@ -114,7 +109,7 @@ public sealed class PlaybackEndpointsTests : IAsyncLifetime
     public async Task A_video_that_is_not_ready_cannot_be_played()
     {
         using var client = await SignedInClientAsync();
-        var videoId = await SeedVideoAsync(client, VideoStatus.Processing);
+        var videoId = await TestData.SeedVideoAsync(_factory, client, VideoStatus.Processing);
 
         var response = await client.GetAsync($"/videos/{videoId}/hls/master.m3u8");
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
@@ -160,72 +155,14 @@ public sealed class PlaybackEndpointsTests : IAsyncLifetime
     private async Task<(HttpClient Client, Guid VideoId)> ReadyVideoAsync()
     {
         var client = await SignedInClientAsync();
-        var videoId = await SeedVideoAsync(client, VideoStatus.Ready);
+        var videoId = await TestData.SeedVideoAsync(_factory, client, VideoStatus.Ready);
 
-        using var scope = _factory.Services.CreateScope();
-        var storage = scope.ServiceProvider.GetRequiredService<IObjectStorage>();
-        await SeedObjectAsync(storage, HlsPaths.Key(videoId, "master.m3u8"), Encoding.UTF8.GetBytes(MasterPlaylist), "application/vnd.apple.mpegurl");
-        await SeedObjectAsync(storage, HlsPaths.Key(videoId, "v0_index.m3u8"), Encoding.UTF8.GetBytes(VariantPlaylist), "application/vnd.apple.mpegurl");
-        await SeedObjectAsync(storage, HlsPaths.Key(videoId, "v0_seg000.ts"), SegmentBytes, "video/mp2t");
+        await TestData.SeedObjectAsync(_factory, HlsPaths.Key(videoId, "master.m3u8"), Encoding.UTF8.GetBytes(MasterPlaylist), "application/vnd.apple.mpegurl");
+        await TestData.SeedObjectAsync(_factory, HlsPaths.Key(videoId, "v0_index.m3u8"), Encoding.UTF8.GetBytes(VariantPlaylist), "application/vnd.apple.mpegurl");
+        await TestData.SeedObjectAsync(_factory, HlsPaths.Key(videoId, "v0_seg000.ts"), SegmentBytes, "video/mp2t");
 
         return (client, videoId);
     }
 
-    private async Task<Guid> SeedVideoAsync(HttpClient owner, VideoStatus status)
-    {
-        var me = await owner.GetFromJsonAsync<MeBody>("/auth/me");
-        var videoId = Guid.NewGuid();
-
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<TesseraDbContext>();
-        db.Videos.Add(new Video
-        {
-            Id = videoId,
-            OwnerId = me!.Id,
-            Title = "Playable clip",
-            OriginalFileName = "clip.mp4",
-            ContentType = "video/mp4",
-            SizeBytes = 1234,
-            StorageKey = $"uploads/{me.Id}/{videoId}",
-            Status = status,
-            CreatedAt = DateTimeOffset.UtcNow,
-        });
-        await db.SaveChangesAsync();
-        return videoId;
-    }
-
-    private static async Task SeedObjectAsync(IObjectStorage storage, string key, byte[] content, string contentType)
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"tessera-test-{Guid.NewGuid():N}");
-        try
-        {
-            await File.WriteAllBytesAsync(path, content);
-            await storage.UploadFileAsync(key, path, contentType, CancellationToken.None);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    private async Task<HttpClient> SignedInClientAsync()
-    {
-        // AllowAutoRedirect off so the segment 302 can be asserted rather than followed.
-        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            BaseAddress = new Uri("https://localhost"),
-            AllowAutoRedirect = false,
-        });
-
-        var credentials = new { email = $"playback-{Guid.NewGuid():N}@tessera.test", password = "Str0ng!Passphrase" };
-        (await client.PostAsJsonAsync("/auth/register", credentials)).EnsureSuccessStatusCode();
-        var login = await client.PostAsJsonAsync("/auth/login", credentials);
-        var token = (await login.Content.ReadFromJsonAsync<TokenBody>())!.AccessToken;
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    private sealed record TokenBody(string AccessToken);
-
-    private sealed record MeBody(Guid Id, string Email);
+    private Task<HttpClient> SignedInClientAsync() => TestData.SignedInClientAsync(_factory, "playback");
 }

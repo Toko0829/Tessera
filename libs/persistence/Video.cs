@@ -35,6 +35,10 @@ public sealed class Video
     public required string StorageKey { get; init; }
 
     public VideoStatus Status { get; set; }
+
+    // Measured by the worker's ffprobe pass; null until the video is transcoded.
+    public double? DurationSeconds { get; set; }
+
     public DateTimeOffset CreatedAt { get; init; }
 
     public TesseraUser? Owner { get; init; }

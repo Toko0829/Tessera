@@ -135,10 +135,20 @@ public static class VideoEndpoints
             return Results.Unauthorized();
         }
 
+        var owner = ownerId.Value;
         var videos = await db.Videos
-            .Where(v => v.OwnerId == ownerId)
+            .Where(v => v.OwnerId == owner)
             .OrderByDescending(v => v.CreatedAt)
-            .Select(v => new VideoResponse(v.Id, v.Title, v.Status.ToString(), v.CreatedAt))
+            .Select(v => new VideoResponse(
+                v.Id,
+                v.Title,
+                v.Status.ToString(),
+                v.CreatedAt,
+                v.DurationSeconds,
+                db.WatchProgresses
+                    .Where(p => p.VideoId == v.Id && p.UserId == owner)
+                    .Select(p => (double?)p.PositionSeconds)
+                    .FirstOrDefault()))
             .ToListAsync(ct);
 
         return Results.Ok(videos);
@@ -165,7 +175,13 @@ public static class VideoEndpoints
             return Results.Forbid();
         }
 
-        return Results.Ok(ToResponse(video));
+        var position = await db.WatchProgresses
+            .AsNoTracking()
+            .Where(p => p.UserId == ownerId && p.VideoId == id)
+            .Select(p => (double?)p.PositionSeconds)
+            .FirstOrDefaultAsync(ct);
+
+        return Results.Ok(ToResponse(video, position));
     }
 
     private static async Task<IResult> RejectAsync(
@@ -177,8 +193,8 @@ public static class VideoEndpoints
         return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: reason);
     }
 
-    private static VideoResponse ToResponse(Video video)
-        => new(video.Id, video.Title, video.Status.ToString(), video.CreatedAt);
+    private static VideoResponse ToResponse(Video video, double? positionSeconds = null)
+        => new(video.Id, video.Title, video.Status.ToString(), video.CreatedAt, video.DurationSeconds, positionSeconds);
 
     private static Dictionary<string, string[]>? Validate(InitiateUploadRequest request, long maxBytes)
     {

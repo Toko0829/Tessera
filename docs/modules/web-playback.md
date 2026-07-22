@@ -13,9 +13,11 @@ choosing renditions (hls.js adapts on its own).
 
 | Name | Kind | Responsibility |
 | --- | --- | --- |
-| `Watch` | lazy route component (guarded) | fetch the video, drive hls.js, error states |
-| `VideoService.get(id)` | service method | one video's details |
+| `Watch` | lazy route component (guarded) | fetch the video, drive hls.js, resume and save progress, error states |
+| `VideoService.get(id)` | service method | one video's details, including duration and saved position |
+| `VideoService.saveProgress(id, seconds)` | service method | record the playback position |
 | `attachPlaybackToken` | function | adds the bearer token to hls.js requests, same-origin only |
+| `resumePosition` | function | where playback starts given the saved position |
 
 Route: `/watch/:id`, lazy loaded behind `authGuard`. hls.js ships only inside this
 chunk, keeping the initial bundle within budget (measured 75 kB gzipped against the
@@ -53,15 +55,20 @@ which is why token handling lives here and not in the interceptor.
 | Browser without Media Source Extensions | `Hls.isSupported()` false | use an MSE browser | honest unsupported message |
 | Fatal stream error mid-play | hls.js fatal error event | reload the page | playback error message |
 | Access token expires mid-play | API returns 401 to hls.js | reload (session restore refreshes) | playback error message |
+| A progress save fails | request errors | the next cadence tick retries | nothing; playback is never interrupted over it |
+| Tab closes without a final save | nothing to detect | at most one cadence interval is lost | resume lands up to 5 seconds early |
 
 ## Testing
 
 **Covered:** `attachPlaybackToken` attaches to relative and same-origin URLs and
-never to the storage host or without a token; the component loads the video by
-route id and shows the title, shows the waiting state for a non-Ready video, the
-unsupported state where MSE is absent (jsdom, so that branch is the natural one),
-and the load-error state. Real MSE playback, including the redirect hop stripping
-the auth header, was verified against the running stack in a real browser.
+never to the storage host or without a token; `resumePosition` starts over with no
+save or a save inside the final stretch and resumes anywhere else;
+`VideoService.saveProgress` sends the position to the right endpoint; the
+component loads the video by route id and shows the title, shows the waiting
+state for a non-Ready video, the unsupported state where MSE is absent (jsdom, so
+that branch is the natural one), and the load-error state. Real playback, resume
+at the saved position, and the library progress bar were verified against the
+running stack in a real browser.
 
 **Deliberately not covered:** simulated MSE playback in jsdom (it would test a
 mock of hls.js, not playback) and the Playwright E2E, which lands with the wider
@@ -91,10 +98,28 @@ that for styling gains this slice does not need.
 **Trade-off accepted:** less visual polish; revisited when captions and quality
 selection UI arrive.
 
+### Progress saved on a 5-second cadence, on pause, and on leaving
+
+**Chose:** throttled `timeupdate` saves plus a save on `pause` and on component
+destroy, with a failed save recovered by the next tick.
+**Over:** `navigator.sendBeacon` on unload, or saving on every `timeupdate`.
+**Because:** a beacon cannot carry the `Authorization` header the API requires, so
+the reliable close-tab save is not available to a bearer-token client; the cadence
+bounds the loss to 5 seconds, which resume rounds down anyway. Saving unthrottled
+would send four requests a second for no added fidelity and trip the rate limit.
+**Trade-off accepted:** a hard tab close can lose up to one interval of progress.
+
+### Restart near the end instead of resuming
+
+**Chose:** a saved position inside the final 10 seconds restarts from the top.
+**Over:** always resuming exactly where the viewer left.
+**Because:** a viewer who reached the credits and comes back wants to watch again,
+not to resume into the last seconds and immediately finish.
+**Trade-off accepted:** the 10-second window is a product judgement, kept in one
+tested function.
+
 ## Known gaps (next slices)
 
-- **Watch progress:** resumable playback position is the natural next slice
-  (charter rate table already reserves a tier for progress writes).
 - **Captions:** no subtitle tracks exist yet; hls.js will surface them once the
   pipeline produces them. Mandatory before this feature is called complete
   (charter section 11).

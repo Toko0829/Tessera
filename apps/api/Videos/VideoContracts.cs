@@ -7,4 +7,14 @@ public sealed record InitiateUploadResponse(
     string UploadUrl,
     IReadOnlyDictionary<string, string> Fields);
 
-public sealed record VideoResponse(Guid Id, string Title, string Status, DateTimeOffset CreatedAt);
+// DurationSeconds is null until the worker has measured the video; PositionSeconds
+// is null until the caller has watched some of it.
+public sealed record VideoResponse(
+    Guid Id,
+    string Title,
+    string Status,
+    DateTimeOffset CreatedAt,
+    double? DurationSeconds,
+    double? PositionSeconds);
+
+public sealed record SaveProgressRequest(double PositionSeconds);

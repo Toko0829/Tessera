@@ -30,7 +30,11 @@ POST), then calls `complete`.
 
 Owns the `Videos` table: `Id`, `OwnerId` (FK, cascade), `Title`, `OriginalFileName`,
 `ContentType`, `SizeBytes`, `StorageKey` (`uploads/{ownerId}/{videoId}`), `Status`
-(`PendingUpload` / `Uploaded` / `Rejected`, stored as text), `CreatedAt`.
+(`PendingUpload` / `Uploaded` / `Rejected`, stored as text), `DurationSeconds`
+(null until the transcode worker measures it), `CreatedAt`.
+
+Video responses carry `durationSeconds` and the caller's `positionSeconds` (from
+the playback module's `WatchProgresses`), both null until they exist.
 
 | Index | Columns | Serves which query | Why |
 | --- | --- | --- | --- |
