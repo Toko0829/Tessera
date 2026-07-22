@@ -8,4 +8,7 @@ public static class RateLimitPolicies
     // without reading the request body at the limiter.
     public const string AuthRegister = "auth-register";
     public const string AuthLogin = "auth-login";
+
+    // Refresh and logout: token operations, limited more generously than login.
+    public const string AuthRefresh = "auth-refresh";
 }

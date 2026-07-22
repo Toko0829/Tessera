@@ -47,6 +47,7 @@ builder.Services
     .AddSignInManager();
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<RefreshTokenService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -71,7 +72,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     _ => ConnectionMultiplexer.Connect(redisConnection));
 
-static RateLimitPartition<string> AuthPartition(HttpContext httpContext, string prefix)
+static RateLimitPartition<string> AuthPartition(HttpContext httpContext, string prefix, int permitLimit)
 {
     var multiplexer = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
     var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -81,7 +82,7 @@ static RateLimitPartition<string> AuthPartition(HttpContext httpContext, string 
         _ => new RedisFixedWindowRateLimiterOptions
         {
             ConnectionMultiplexerFactory = () => multiplexer,
-            PermitLimit = 5,
+            PermitLimit = permitLimit,
             Window = TimeSpan.FromMinutes(15),
         });
 }
@@ -93,8 +94,9 @@ builder.Services.AddRateLimiter(options =>
     // Fixed window keyed by client IP, held in Redis so the limit spans every API
     // instance (CLAUDE.md section 6). The account dimension is covered separately by
     // Identity lockout.
-    options.AddPolicy(RateLimitPolicies.AuthRegister, ctx => AuthPartition(ctx, RateLimitPolicies.AuthRegister));
-    options.AddPolicy(RateLimitPolicies.AuthLogin, ctx => AuthPartition(ctx, RateLimitPolicies.AuthLogin));
+    options.AddPolicy(RateLimitPolicies.AuthRegister, ctx => AuthPartition(ctx, RateLimitPolicies.AuthRegister, 5));
+    options.AddPolicy(RateLimitPolicies.AuthLogin, ctx => AuthPartition(ctx, RateLimitPolicies.AuthLogin, 5));
+    options.AddPolicy(RateLimitPolicies.AuthRefresh, ctx => AuthPartition(ctx, RateLimitPolicies.AuthRefresh, 30));
 });
 
 var app = builder.Build();

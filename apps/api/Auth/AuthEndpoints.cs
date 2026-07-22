@@ -14,6 +14,8 @@ public static class AuthEndpoints
 
         group.MapPost("/register", RegisterAsync).RequireRateLimiting(RateLimitPolicies.AuthRegister);
         group.MapPost("/login", LoginAsync).RequireRateLimiting(RateLimitPolicies.AuthLogin);
+        group.MapPost("/refresh", RefreshAsync).RequireRateLimiting(RateLimitPolicies.AuthRefresh);
+        group.MapPost("/logout", LogoutAsync).RequireRateLimiting(RateLimitPolicies.AuthRefresh);
         group.MapGet("/me", GetMe).RequireAuthorization();
 
         return app;
@@ -54,9 +56,12 @@ public static class AuthEndpoints
 
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
+        HttpContext http,
         UserManager<TesseraUser> userManager,
         SignInManager<TesseraUser> signInManager,
-        TokenService tokens)
+        TokenService tokens,
+        RefreshTokenService refreshTokens,
+        CancellationToken ct)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is not null)
@@ -64,6 +69,9 @@ public static class AuthEndpoints
             var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
             if (result.Succeeded)
             {
+                var (rawRefresh, refreshExpiry) = await refreshTokens.IssueAsync(user.Id, ct);
+                RefreshTokenCookie.Set(http.Response, rawRefresh, refreshExpiry);
+
                 var token = tokens.CreateAccessToken(user);
                 return Results.Ok(new LoginResponse(token.Value, token.ExpiresAt));
             }
@@ -71,6 +79,60 @@ public static class AuthEndpoints
 
         // One generic response whether the account is missing, the password is
         // wrong, or the account is locked. Never leak which.
+        return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid credentials.");
+    }
+
+    private static async Task<IResult> RefreshAsync(
+        HttpContext http,
+        UserManager<TesseraUser> userManager,
+        TokenService tokens,
+        RefreshTokenService refreshTokens,
+        CancellationToken ct)
+    {
+        var cookie = http.Request.Cookies[RefreshTokenCookie.Name];
+        if (string.IsNullOrEmpty(cookie))
+        {
+            return Unauthorized(http);
+        }
+
+        var rotation = await refreshTokens.RotateAsync(cookie, ct);
+        if (rotation.Outcome is not RefreshOutcome.Success)
+        {
+            // Invalid or reused: clear the cookie and reject. A reuse has already
+            // revoked the whole family inside RotateAsync.
+            return Unauthorized(http);
+        }
+
+        var user = await userManager.FindByIdAsync(rotation.UserId.ToString());
+        if (user is null)
+        {
+            return Unauthorized(http);
+        }
+
+        RefreshTokenCookie.Set(http.Response, rotation.RawToken!, rotation.ExpiresAt);
+
+        var token = tokens.CreateAccessToken(user);
+        return Results.Ok(new LoginResponse(token.Value, token.ExpiresAt));
+    }
+
+    private static async Task<IResult> LogoutAsync(
+        HttpContext http,
+        RefreshTokenService refreshTokens,
+        CancellationToken ct)
+    {
+        var cookie = http.Request.Cookies[RefreshTokenCookie.Name];
+        if (!string.IsNullOrEmpty(cookie))
+        {
+            await refreshTokens.RevokeAsync(cookie, ct);
+        }
+
+        RefreshTokenCookie.Clear(http.Response);
+        return Results.NoContent();
+    }
+
+    private static IResult Unauthorized(HttpContext http)
+    {
+        RefreshTokenCookie.Clear(http.Response);
         return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid credentials.");
     }
 
