@@ -61,6 +61,7 @@ public static class AuthEndpoints
         SignInManager<TesseraUser> signInManager,
         TokenService tokens,
         RefreshTokenService refreshTokens,
+        RefreshTokenCookie cookie,
         CancellationToken ct)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -70,7 +71,7 @@ public static class AuthEndpoints
             if (result.Succeeded)
             {
                 var (rawRefresh, refreshExpiry) = await refreshTokens.IssueAsync(user.Id, ct);
-                RefreshTokenCookie.Set(http.Response, rawRefresh, refreshExpiry);
+                cookie.Set(http.Response, rawRefresh, refreshExpiry);
 
                 var token = tokens.CreateAccessToken(user);
                 return Results.Ok(new LoginResponse(token.Value, token.ExpiresAt));
@@ -87,29 +88,30 @@ public static class AuthEndpoints
         UserManager<TesseraUser> userManager,
         TokenService tokens,
         RefreshTokenService refreshTokens,
+        RefreshTokenCookie cookie,
         CancellationToken ct)
     {
-        var cookie = http.Request.Cookies[RefreshTokenCookie.Name];
-        if (string.IsNullOrEmpty(cookie))
+        var raw = http.Request.Cookies[RefreshTokenCookie.Name];
+        if (string.IsNullOrEmpty(raw))
         {
-            return Unauthorized(http);
+            return Unauthorized(http, cookie);
         }
 
-        var rotation = await refreshTokens.RotateAsync(cookie, ct);
+        var rotation = await refreshTokens.RotateAsync(raw, ct);
         if (rotation.Outcome is not RefreshOutcome.Success)
         {
             // Invalid or reused: clear the cookie and reject. A reuse has already
             // revoked the whole family inside RotateAsync.
-            return Unauthorized(http);
+            return Unauthorized(http, cookie);
         }
 
         var user = await userManager.FindByIdAsync(rotation.UserId.ToString());
         if (user is null)
         {
-            return Unauthorized(http);
+            return Unauthorized(http, cookie);
         }
 
-        RefreshTokenCookie.Set(http.Response, rotation.RawToken!, rotation.ExpiresAt);
+        cookie.Set(http.Response, rotation.RawToken!, rotation.ExpiresAt);
 
         var token = tokens.CreateAccessToken(user);
         return Results.Ok(new LoginResponse(token.Value, token.ExpiresAt));
@@ -118,21 +120,22 @@ public static class AuthEndpoints
     private static async Task<IResult> LogoutAsync(
         HttpContext http,
         RefreshTokenService refreshTokens,
+        RefreshTokenCookie cookie,
         CancellationToken ct)
     {
-        var cookie = http.Request.Cookies[RefreshTokenCookie.Name];
-        if (!string.IsNullOrEmpty(cookie))
+        var raw = http.Request.Cookies[RefreshTokenCookie.Name];
+        if (!string.IsNullOrEmpty(raw))
         {
-            await refreshTokens.RevokeAsync(cookie, ct);
+            await refreshTokens.RevokeAsync(raw, ct);
         }
 
-        RefreshTokenCookie.Clear(http.Response);
+        cookie.Clear(http.Response);
         return Results.NoContent();
     }
 
-    private static IResult Unauthorized(HttpContext http)
+    private static IResult Unauthorized(HttpContext http, RefreshTokenCookie cookie)
     {
-        RefreshTokenCookie.Clear(http.Response);
+        cookie.Clear(http.Response);
         return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid credentials.");
     }
 

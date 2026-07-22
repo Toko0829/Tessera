@@ -48,6 +48,7 @@ builder.Services
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddSingleton<RefreshTokenCookie>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
