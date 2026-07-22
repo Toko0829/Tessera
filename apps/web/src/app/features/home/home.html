@@ -1,0 +1,39 @@
+<div class="min-h-screen bg-surface-0 text-ink antialiased">
+  <header class="flex items-center justify-between border-b border-border px-6 py-4">
+    <div class="flex items-center gap-2.5">
+      <span class="grid grid-cols-2 gap-1" aria-hidden="true">
+        <span class="size-3.5 rounded-[3px] bg-accent"></span>
+        <span class="size-3.5 rounded-[3px] bg-accent-deep"></span>
+        <span class="size-3.5 rounded-[3px] bg-accent-deep"></span>
+        <span class="size-3.5 rounded-[3px] bg-accent-hi"></span>
+      </span>
+      <span class="text-base font-semibold uppercase tracking-[0.2em]">Tessera</span>
+    </div>
+
+    <div class="flex items-center gap-4">
+      @if (user(); as me) {
+        <span class="text-sm text-ink-muted">{{ me.email }}</span>
+      }
+      <button
+        type="button"
+        (click)="logout()"
+        class="h-9 rounded-lg border border-border px-3 text-sm text-ink transition hover:bg-surface-1"
+      >
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-6 py-16 text-center">
+    <h1 class="text-2xl font-semibold tracking-tight">
+      @if (user()) {
+        You are signed in
+      } @else {
+        Loading...
+      }
+    </h1>
+    <p class="mx-auto mt-3 max-w-md text-ink-muted">
+      Your authenticated area. Upload and your library land here as those features ship.
+    </p>
+  </main>
+</div>
