@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/api/">
+    <Project Path="apps/api/Tessera.Api.csproj" />
+  </Folder>
+  <Folder Name="/apps/worker/">
+    <Project Path="apps/worker/Tessera.Worker.csproj" />
+  </Folder>
+  <Folder Name="/libs/" />
+  <Folder Name="/libs/domain/">
+    <Project Path="libs/domain/Tessera.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tessera.Domain.Tests/Tessera.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
