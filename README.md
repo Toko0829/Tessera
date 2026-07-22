@@ -68,7 +68,12 @@ dotnet user-secrets --project apps/api \
   set "ConnectionStrings:Tessera" "Host=localhost;Port=5433;Database=tessera;Username=tessera;Password=tessera_dev"
 dotnet user-secrets --project apps/api set "ConnectionStrings:Redis" "localhost:6379"
 dotnet user-secrets --project apps/api set "Jwt:SigningKey" "$(openssl rand -base64 48)"
+dotnet user-secrets --project apps/api set "Storage:AccessKey" "tessera"
+dotnet user-secrets --project apps/api set "Storage:SecretKey" "tessera_dev_minio"
 ```
+
+The MinIO console is at http://localhost:9001 (login `tessera` / `tessera_dev_minio`)
+if you want to browse uploaded objects.
 
 Then run (the schema is applied automatically on first start in development):
 

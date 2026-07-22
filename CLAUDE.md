@@ -194,6 +194,7 @@ apps/
 libs/
   domain/         Framework-free domain logic, referenced by api and worker
   persistence/    EF Core context + Identity user store, referenced by api (and worker)
+  storage/        S3-compatible object storage (presigned uploads, reads), api and worker
 docs/
   modules/        One file per module — mandatory, see §4
 tests/            .NET test projects (xUnit + Testcontainers)
@@ -271,7 +272,10 @@ Requirements:
 - Transcode in an isolated sandbox with a CPU and wall-clock timeout. FFmpeg
   parsing untrusted input is a known RCE surface — treat every upload as hostile.
 - Strip all metadata from uploads. User files carry GPS and device identifiers.
-- Generate upload URLs as presigned PUTs scoped to one key, short expiry.
+- Generate upload URLs as presigned **POSTs** scoped to one key, short expiry. POST
+  (not PUT) is chosen because its `content-length-range` condition lets object storage
+  itself reject oversized uploads, which is how the storage-layer size limit above is
+  enforced.
 
 ### Input, output, transport
 

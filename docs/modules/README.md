@@ -11,6 +11,8 @@ Creating a module without `docs/modules/<module>.md` is incomplete work. See
 | persistence | `libs/persistence` | PostgreSQL access, EF Core context, Identity user store | [persistence.md](./persistence.md) |
 | auth | `apps/api` (`Auth/`) | Register, login, JWT issuance, rate limiting, lockout | [auth.md](./auth.md) |
 | web-auth | `apps/web` (`core/auth`, `features/auth`) | Login and signup UI, client auth state | [web-auth.md](./web-auth.md) |
+| storage | `libs/storage` | S3-compatible object storage (presigned uploads, reads) | [storage.md](./storage.md) |
+| video-upload | `apps/api` (`Videos/`) | Presigned upload, magic-byte validation, video records | [video-upload.md](./video-upload.md) |
 
 ---
 

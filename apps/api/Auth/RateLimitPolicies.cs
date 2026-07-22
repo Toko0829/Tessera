@@ -11,4 +11,7 @@ public static class RateLimitPolicies
 
     // Refresh and logout: token operations, limited more generously than login.
     public const string AuthRefresh = "auth-refresh";
+
+    // Video upload initiation: keyed per user (charter section 6).
+    public const string VideoUpload = "video-upload";
 }

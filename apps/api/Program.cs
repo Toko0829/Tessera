@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,7 +10,9 @@ using Microsoft.IdentityModel.Tokens;
 using RedisRateLimiting;
 using StackExchange.Redis;
 using Tessera.Api.Auth;
+using Tessera.Api.Videos;
 using Tessera.Persistence;
+using Tessera.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +52,9 @@ builder.Services
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddSingleton<RefreshTokenCookie>();
+
+builder.Services.AddTesseraStorage(builder.Configuration);
+builder.Services.Configure<VideoUploadOptions>(builder.Configuration.GetSection(VideoUploadOptions.SectionName));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -98,23 +104,45 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(RateLimitPolicies.AuthRegister, ctx => AuthPartition(ctx, RateLimitPolicies.AuthRegister, 5));
     options.AddPolicy(RateLimitPolicies.AuthLogin, ctx => AuthPartition(ctx, RateLimitPolicies.AuthLogin, 5));
     options.AddPolicy(RateLimitPolicies.AuthRefresh, ctx => AuthPartition(ctx, RateLimitPolicies.AuthRefresh, 30));
+
+    // Upload initiation is keyed per authenticated user: 10 per hour.
+    options.AddPolicy(RateLimitPolicies.VideoUpload, httpContext =>
+    {
+        var multiplexer = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+        var userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var partitionKey = userId is not null
+            ? $"video-upload:user:{userId}"
+            : $"video-upload:ip:{httpContext.Connection.RemoteIpAddress}";
+
+        return RedisRateLimitPartition.GetFixedWindowRateLimiter(partitionKey, _ => new RedisFixedWindowRateLimiterOptions
+        {
+            ConnectionMultiplexerFactory = () => multiplexer,
+            PermitLimit = 10,
+            Window = TimeSpan.FromHours(1),
+        });
+    });
 });
 
 var app = builder.Build();
 
-// In development the schema is applied on startup so a fresh clone runs right after
-// `docker compose up`. Production applies migrations in the deploy pipeline, not here.
+// In development the schema is applied and the storage bucket is created on startup,
+// so a fresh clone runs right after `docker compose up`. Production applies migrations
+// in the deploy pipeline and provisions the bucket separately, not here.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var database = scope.ServiceProvider.GetRequiredService<TesseraDbContext>();
     await database.Database.MigrateAsync();
+
+    var storage = scope.ServiceProvider.GetRequiredService<IObjectStorage>();
+    await storage.EnsureBucketExistsAsync(CancellationToken.None);
 }
 
-// Rate limiting runs before authentication so the auth endpoints cannot be used as
-// a brute-force oracle (CLAUDE.md section 6).
-app.UseRateLimiter();
+// Authenticate first so the per-user rate limits can key on the user; the limiter
+// still runs before the endpoint (and before authorization), so the auth endpoints
+// cannot be used as a brute-force oracle (CLAUDE.md section 6).
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // Liveness probe: public, unauthenticated, and intentionally not rate limited so
@@ -122,6 +150,7 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapAuthEndpoints();
+app.MapVideoEndpoints();
 
 app.Run();
 
