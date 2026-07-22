@@ -75,8 +75,8 @@ upload is rejected; one user cannot complete another's upload (`403`); initiatin
 without a token is `401`; the list returns only the caller's videos. These exercise
 the actual presigned POST signing and the magic-byte read, not mocks.
 
-**Deliberately not covered yet:** the browser upload UI (next slice) and its MinIO
-CORS configuration.
+The browser upload UI and its MinIO CORS configuration now live in the web-video
+module.
 
 ## Decisions
 
