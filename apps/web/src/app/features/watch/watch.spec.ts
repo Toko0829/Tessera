@@ -16,6 +16,8 @@ describe('Watch', () => {
     title: 'My clip',
     status: 'Ready',
     createdAt: '2026-07-23T10:00:00Z',
+    durationSeconds: 120,
+    positionSeconds: 42.5,
   };
 
   beforeEach(async () => {

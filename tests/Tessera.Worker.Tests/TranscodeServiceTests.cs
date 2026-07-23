@@ -23,6 +23,15 @@ public sealed class TranscodeServiceTests(WorkerFixture fixture) : IClassFixture
 
         await AssertStatusAsync(videoId, VideoStatus.Ready);
 
+        // The measured duration lands with Ready: the clip is two seconds long.
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TesseraDbContext>();
+            var video = await db.Videos.AsNoTracking().SingleAsync(v => v.Id == videoId);
+            Assert.NotNull(video.DurationSeconds);
+            Assert.InRange(video.DurationSeconds!.Value, 1.5, 2.5);
+        }
+
         var storage = fixture.Services.GetRequiredService<IObjectStorage>();
         Assert.NotNull(await storage.GetSizeAsync($"videos/{videoId}/hls/master.m3u8", CancellationToken.None));
         Assert.NotNull(await storage.GetSizeAsync($"videos/{videoId}/hls/v0_index.m3u8", CancellationToken.None));

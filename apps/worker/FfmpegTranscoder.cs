@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using Microsoft.Extensions.Options;
 
 namespace Tessera.Worker;
@@ -21,6 +22,25 @@ public sealed class FfmpegTranscoder(IOptions<TranscodeOptions> options)
             ct);
 
         return !string.IsNullOrWhiteSpace(output);
+    }
+
+    // The container's duration in seconds. Recorded on the video so the API can
+    // validate watch-progress positions against the real length.
+    public async Task<double> GetDurationSecondsAsync(string inputPath, CancellationToken ct)
+    {
+        var output = await RunAsync(
+            _options.FfprobePath,
+            ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", inputPath],
+            TimeSpan.FromMinutes(1),
+            ct);
+
+        if (!double.TryParse(output.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) ||
+            seconds <= 0)
+        {
+            throw new TranscodeException("ffprobe did not report a positive duration for the input.");
+        }
+
+        return seconds;
     }
 
     // Produces a two-rendition HLS ladder (720p and 480p) with a master playlist,

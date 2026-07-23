@@ -42,6 +42,7 @@ public sealed class TranscodeService(
             await storage.DownloadToFileAsync(video.StorageKey, inputPath, ct);
 
             var hasAudio = await transcoder.HasAudioAsync(inputPath, ct);
+            var durationSeconds = await transcoder.GetDurationSecondsAsync(inputPath, ct);
             await transcoder.TranscodeToHlsAsync(inputPath, outputDir, hasAudio, ct);
 
             foreach (var file in Directory.EnumerateFiles(outputDir))
@@ -50,7 +51,12 @@ public sealed class TranscodeService(
                 await storage.UploadFileAsync(HlsPaths.Key(videoId, name), file, ContentTypeFor(name), ct);
             }
 
-            await SetStatusAsync(videoId, VideoStatus.Ready, CancellationToken.None);
+            // Status and duration land together: a Ready video always has a length.
+            await db.Videos
+                .Where(v => v.Id == videoId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(v => v.Status, VideoStatus.Ready)
+                    .SetProperty(v => v.DurationSeconds, durationSeconds), CancellationToken.None);
             logger.LogInformation(
                 "Transcoded {VideoId} to HLS in {ElapsedSeconds:0}s", videoId, (clock.GetUtcNow() - started).TotalSeconds);
         }

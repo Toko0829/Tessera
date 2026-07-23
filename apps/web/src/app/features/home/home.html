@@ -84,6 +84,21 @@
                 <p class="font-medium">{{ video.title }}</p>
               }
               <p class="text-xs text-ink-faint">{{ video.createdAt | date: 'medium' }}</p>
+              @if (video.status === 'Ready' && video.positionSeconds && video.durationSeconds) {
+                <div
+                  class="mt-1.5 h-1 w-40 overflow-hidden rounded-full bg-surface-2"
+                  role="progressbar"
+                  aria-label="Watch progress"
+                  [attr.aria-valuenow]="(100 * video.positionSeconds) / video.durationSeconds | number: '1.0-0'"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <div
+                    class="h-full rounded-full bg-accent"
+                    [style.width.%]="(100 * video.positionSeconds) / video.durationSeconds"
+                  ></div>
+                </div>
+              }
             </div>
             <span class="rounded-md px-2 py-0.5 text-xs font-medium" [class]="statusClass(video.status)">
               {{ statusLabel(video.status) }}

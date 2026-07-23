@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tessera.Api.Auth;
+using Tessera.Api.Videos;
 using Tessera.Domain;
 using Tessera.Persistence;
 using Tessera.Storage;
@@ -37,7 +38,71 @@ public static partial class PlaybackEndpoints
         group.MapGet("/{segment}.ts", GetSegmentAsync)
             .RequireRateLimiting(RateLimitPolicies.PlaybackSegment);
 
+        app.MapPut("/videos/{id:guid}/progress", SaveProgressAsync)
+            .RequireAuthorization()
+            .RequireRateLimiting(RateLimitPolicies.WatchProgress);
+
         return app;
+    }
+
+    private static async Task<IResult> SaveProgressAsync(
+        Guid id,
+        SaveProgressRequest request,
+        ClaimsPrincipal principal,
+        TesseraDbContext db,
+        TimeProvider clock,
+        CancellationToken ct)
+    {
+        var ownerId = principal.UserId();
+        if (ownerId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var video = await db.Videos
+            .AsNoTracking()
+            .Where(v => v.Id == id)
+            .Select(v => new { v.OwnerId, v.Status, v.DurationSeconds })
+            .FirstOrDefaultAsync(ct);
+        if (video is null)
+        {
+            return Results.NotFound();
+        }
+
+        if (video.OwnerId != ownerId)
+        {
+            return Results.Forbid();
+        }
+
+        if (video.Status != VideoStatus.Ready)
+        {
+            return Results.Problem(statusCode: StatusCodes.Status409Conflict, title: "This video is not ready to play.");
+        }
+
+        // The duration is measured by the worker, so a position past it is a client
+        // defect, not a user mistake. Videos transcoded before duration capture
+        // existed have no length on record and only the lower bound applies.
+        if (request.PositionSeconds < 0 ||
+            (video.DurationSeconds is not null && request.PositionSeconds > video.DurationSeconds))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["positionSeconds"] = ["Position must be between zero and the video's length."],
+            });
+        }
+
+        var now = clock.GetUtcNow();
+
+        // Atomic last-write-wins upsert: two players saving concurrently (two tabs,
+        // two devices) cannot lose the row or fail on the unique key.
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "WatchProgresses" ("UserId", "VideoId", "PositionSeconds", "UpdatedAt")
+            VALUES ({ownerId.Value}, {id}, {request.PositionSeconds}, {now})
+            ON CONFLICT ("UserId", "VideoId")
+            DO UPDATE SET "PositionSeconds" = {request.PositionSeconds}, "UpdatedAt" = {now}
+            """, ct);
+
+        return Results.NoContent();
     }
 
     private static async Task<IResult> GetPlaylistAsync(
